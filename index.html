@@ -20,10 +20,12 @@
 <body>
     <div class="container">
         <h1>Chat with X-Sune</h1>
-        <input type="text" id="username" placeholder="用户名"><br>
-        <input type="password" id="password" placeholder="密码"><br>
-        <button onclick="register()">注册</button>
-        <button onclick="login()">登录</button>
+        <div id="register-login">
+            <input type="text" id="username" placeholder="用户名"><br>
+            <input type="password" id="password" placeholder="密码"><br>
+            <button onclick="register()">注册</button>
+            <button onclick="login()">登录</button>
+        </div>
         <br><br>
         <div class="chat-box" id="chat-box"></div>
         <br>
@@ -32,8 +34,26 @@
     </div>
     <script>
         let token = localStorage.getItem("token");
+        let username = localStorage.getItem("username");
         let chatHistory = [];
         let api_host = window.location.host.indexOf("localhost") != -1 ? "http://localhost:8000" : "https://x-sune.xcx0902.us.kg";
+
+        function check_token() {
+            if (username != null && token != null) {
+                axios.post(api_host + '/check_token', { username, token })
+                    .then(() => {
+                        const register_region = document.getElementById('register-login');
+                        register_region.innerHTML = "<h2>You are logged in as " + username + "</h2>"
+                        register_region.innerHTML += "<button onclick='logout()'>登出</button>"
+                    })
+                    .catch(err => {
+                        token = username = ""
+                        alert(err.response.data.detail);
+                    });
+            }
+        }
+
+        check_token()
 
         function register() {
             const username = document.getElementById('username').value;
@@ -44,15 +64,23 @@
         }
 
         function login() {
-            const username = document.getElementById('username').value;
+            username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             axios.post(api_host + '/token', { username, password })
                 .then(res => {
                     token = res.data.access_token;
                     localStorage.setItem("token", token);
+                    localStorage.setItem("username", username);
                     alert('登录成功！');
+                    location.reload();
                 })
                 .catch(err => alert('登录失败: ' + err.response.data.detail));
+        }
+
+        function logout() {
+            localStorage.removeItem("username");
+            localStorage.removeItem("token");
+            location.reload();
         }
 
         async function sendMessage() {
@@ -68,7 +96,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ user: document.getElementById('username').value, message, history: chatHistory })
+                body: JSON.stringify({ user: username, token: token, message, history: chatHistory })
             });
             
             const reader = response.body.getReader();
@@ -95,7 +123,7 @@
             const chatBox = document.getElementById('chat-box');
             const msgDiv = document.createElement('div');
             msgDiv.className = 'message ' + role;
-            msgDiv.innerText = (role === 'user' ? document.getElementById('username').value + ': ' : 'X-Sune: ') + content;
+            msgDiv.innerText = (role === 'user' ? username + ': ' : 'X-Sune: ') + content;
             chatBox.appendChild(msgDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
