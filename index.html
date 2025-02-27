@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with X-Sune</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #1a1a1a; color: white; text-align: center; }
+        .container { max-width: 600px; margin: auto; padding: 20px; }
+        input, button { margin: 5px; padding: 10px; border-radius: 5px; }
+        input { width: 80%; background-color: #333; color: white; border: none; }
+        button { background-color: #6200ea; color: white; border: none; cursor: pointer; }
+        .chat-box { max-height: 300px; overflow-y: auto; text-align: left; padding: 10px; border: 1px solid #555; border-radius: 5px; }
+        .message { padding: 5px; border-radius: 5px; margin: 5px 0; }
+        .user { background-color: #0057d8; }
+        .ai { background-color: #009688; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chat with X-Sune</h1>
+        <input type="text" id="username" placeholder="用户名"><br>
+        <input type="password" id="password" placeholder="密码"><br>
+        <button onclick="register()">注册</button>
+        <button onclick="login()">登录</button>
+        <br><br>
+        <div class="chat-box" id="chat-box"></div>
+        <br>
+        <input type="text" id="message" placeholder="输入消息...">
+        <button onclick="sendMessage()">发送</button>
+    </div>
+    <script>
+        let token = localStorage.getItem("token");
+        let chatHistory = [];
+        let api_host = window.location.host.indexOf("localhost") != -1 ? "http://localhost:8000" : "https://x-sune.xcx0902.us.kg";
+
+        function register() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            axios.post(api_host + '/register', { username, password })
+                .then(() => alert('注册成功！'))
+                .catch(err => alert('注册失败: ' + err.response.data.detail));
+        }
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            axios.post(api_host + '/token', { username, password })
+                .then(res => {
+                    token = res.data.access_token;
+                    localStorage.setItem("token", token);
+                    alert('登录成功！');
+                })
+                .catch(err => alert('登录失败: ' + err.response.data.detail));
+        }
+
+        async function sendMessage() {
+            if (!token) { alert('请先登录！'); return; }
+            const message = document.getElementById('message').value;
+            chatHistory.push({ role: 'user', content: message });
+            addMessage('user', message);
+            document.getElementById('message').value = '';
+            
+            const response = await fetch(api_host + '/chat_stream', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ user: document.getElementById('username').value, message, history: chatHistory })
+            });
+            
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let aiMessageDiv = document.createElement('div');
+            aiMessageDiv.className = 'message ai';
+            aiMessageDiv.innerText = 'X-Sune: ';
+            let all_text = '';
+            document.getElementById('chat-box').appendChild(aiMessageDiv);
+            
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const text = decoder.decode(value, { stream: true });
+                aiMessageDiv.innerText += text;
+                all_text += text;
+                document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
+            }
+            
+            chatHistory.push({ role: 'assistant', content: all_text });
+        }
+
+        function addMessage(role, content) {
+            const chatBox = document.getElementById('chat-box');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message ' + role;
+            msgDiv.innerText = (role === 'user' ? document.getElementById('username').value + ': ' : 'X-Sune: ') + content;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function clearChatHistory() {
+            chatHistory = []
+            const chatBox = document.getElementById('chat-box');
+            chatBox.innerHTML = "";
+        }
+    </script>
+</body>
+</html>
