@@ -37,6 +37,7 @@
         let username = localStorage.getItem("username");
         let chatHistory = [];
         let api_host = window.location.host.indexOf("localhost") != -1 ? "http://localhost:8000" : "https://x-sune.xcx0902.us.kg";
+        let api_host_ws = window.location.host.indexOf("localhost") != -1 ? "ws://localhost:8000" : "wss://x-sune.xcx0902.us.kg";
 
         function check_token() {
             if (username != null && token != null) {
@@ -83,40 +84,40 @@
             location.reload();
         }
 
+        const ws = new WebSocket(api_host_ws + "/ws/chat");
+
+        let responsing = false;
+        let aiMessageDiv;
+        let all_text = '';
+
+        ws.onmessage = function(event) {
+            let text = event.data;
+            if (text == "<RESPONSE ENDED>") {
+                responsing = false;
+                chatHistory.push({ role: 'assistant', content: all_text });
+                return;
+            }
+            aiMessageDiv.innerText += text;
+            all_text += text;
+            document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
+        }
+
         async function sendMessage() {
             if (!token) { alert('请先登录！'); return; }
+            if (responsing) { alert('请等待本轮对话结束！'); return; }
             const message = document.getElementById('message').value;
             chatHistory.push({ role: 'user', content: message });
             addMessage('user', message);
             document.getElementById('message').value = '';
-            
-            const response = await fetch(api_host + '/chat_stream', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ user: username, token: token, message, history: chatHistory })
-            });
-            
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder("utf-8");
-            let aiMessageDiv = document.createElement('div');
+            all_text = '';            
+            ws.send(JSON.stringify({ user: username, token: token, message, history: chatHistory }));
+
+            aiMessageDiv = document.createElement('div');
             aiMessageDiv.className = 'message ai';
             aiMessageDiv.innerText = 'X-Sune: ';
-            let all_text = '';
             document.getElementById('chat-box').appendChild(aiMessageDiv);
-            
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                const text = decoder.decode(value, { stream: true });
-                aiMessageDiv.innerText += text;
-                all_text += text;
-                document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
-            }
-            
-            chatHistory.push({ role: 'assistant', content: all_text });
+
+            responsing = true;
         }
 
         function addMessage(role, content) {

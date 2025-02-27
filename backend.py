@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List
@@ -112,30 +112,44 @@ def check_token(token: Token):
         raise HTTPException(status_code=401, detail="无效的 Token")
     return "ok"
 
-@app.post("/chat_stream")
-async def chat_stream(request: ChatRequest):
+@app.websocket("/ws/chat")
+async def chat_stream(websocket: WebSocket):
+    await websocket.accept()
     try:
-        payload = jwt.decode(request.token, SECRET_KEY, algorithms=["HS256"])
-        username = payload["sub"]
-        if username != request.user:
-            raise jwt.InvalidTokenError
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token 已过期")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="无效的 Token")
-    def stream_response():
-        print(request.history)
-        response = openai.chat.completions.create(
-            model="deepseek-chat",
-            messages=[{"role": "system", "content": SYSTEM_PROMPT}] + request.history,
-            stream=True
-        )
-        all_text = ""
-        for chunk in response:
-            text = chunk.choices[0].delta.content
-            all_text += text
-            if text:
-                yield text
-        save_chat(request.user, "user", request.message)
-        save_chat(request.user, "assistant", all_text)
-    return StreamingResponse(stream_response(), media_type="text/plain")
+        while True:
+            data = await websocket.receive_json()
+            user = data.get("user")
+            token = data.get("token")
+            message = data.get("message")
+            history = data.get("history", [])
+
+            try:
+                payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+                username = payload["sub"]
+                if username != user:
+                    raise jwt.InvalidTokenError
+            except jwt.ExpiredSignatureError:
+                raise HTTPException(status_code=401, detail="Token 已过期")
+            except jwt.InvalidTokenError:
+                raise HTTPException(status_code=401, detail="无效的 Token")
+            
+            response = openai.chat.completions.create(
+                model="deepseek-chat",
+                messages=history + [{"role": "system", "content": SYSTEM_PROMPT}] + history + [{"role": "user", "content": message}],
+                stream=True
+            )
+            
+            ai_response = ""
+            for chunk in response:
+                text = chunk.choices[0].delta.content
+                if text:
+                    ai_response += text
+                    await websocket.send_text(text)
+            
+            await websocket.send_text("<RESPONSE ENDED>")
+
+            save_chat(user, "user", message)
+            save_chat(user, "assistant", ai_response)
+    except WebSocketDisconnect:
+        print("WebSocket 连接关闭")
+
