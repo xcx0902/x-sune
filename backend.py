@@ -129,9 +129,11 @@ async def chat_stream(websocket: WebSocket):
                 if username != user:
                     raise jwt.InvalidTokenError
             except jwt.ExpiredSignatureError:
-                raise HTTPException(status_code=401, detail="Token 已过期")
+                await websocket.send_text("<TOKEN EXPIRED>")
+                continue
             except jwt.InvalidTokenError:
-                raise HTTPException(status_code=401, detail="无效的 Token")
+                await websocket.send_text("<INVALID TOKEN>")
+                continue
             
             response = openai.chat.completions.create(
                 model="deepseek-chat",

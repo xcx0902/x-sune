@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat with X-Sune</title>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="./reconnecting-websocket.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #1a1a1a; color: white; text-align: center; }
         .container { max-width: 600px; margin: auto; padding: 20px; }
@@ -84,7 +85,7 @@
             location.reload();
         }
 
-        const ws = new WebSocket(api_host_ws + "/ws/chat");
+        const ws = new ReconnectingWebSocket(api_host_ws + "/ws/chat");
 
         let responsing = false;
         let aiMessageDiv;
@@ -92,6 +93,14 @@
 
         ws.onmessage = function(event) {
             let text = event.data;
+            if (text == "<TOKEN EXPIRED>") {
+                alert("Token 已过期，请重新登录");
+                location.reload();
+            }
+            if (text == "<INVALID TOKEN>") {
+                alert("无效的 Token，请重新登录");
+                location.reload();
+            }
             if (text == "<RESPONSE ENDED>") {
                 responsing = false;
                 chatHistory.push({ role: 'assistant', content: all_text });
