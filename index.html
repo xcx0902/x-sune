@@ -8,20 +8,20 @@
     <script src="./reconnecting-websocket.min.js"></script>
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
     <style>
-        body { font-family: Arial, sans-serif; background-color: #1a1a1a; color: white; text-align: center; }
+        body { font-family: Arial, sans-serif; background-color: white; color: #1a1a1a; text-align: center; }
         .container { max-width: 600px; margin: auto; padding: 20px; }
-        input, button { margin: 5px; padding: 10px; border-radius: 5px; }
-        input { width: 80%; background-color: #333; color: white; border: none; }
+        input, button { margin: 5px; padding: 10px; border-radius: 5px; border: 1px solid black}
+        input { width: 80%; background-color: white; color: #1a1a1a; }
         button { background-color: #6200ea; color: white; border: none; cursor: pointer; }
-        .chat-box { max-height: 300px; overflow-y: auto; text-align: left; padding: 10px; border: 1px solid #555; border-radius: 5px; }
+        .chat-box { max-height: 300px; overflow-y: auto; color: white; text-align: left; padding: 10px; border: 1px solid #555; border-radius: 5px; }
         .message { padding: 5px; border-radius: 5px; margin: 5px 0; }
         .user { background-color: #0057d8; }
-        .ai { background-color: #009688; }
+        .ai { background-color: #ff36b9; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Chat with X-Sune</h1>
+        <h1>Chat with <img src="./favicon.ico" width="56" height="48"></h1>
         <div id="register-login">
             <input type="text" id="username" placeholder="用户名"><br>
             <input type="password" id="password" placeholder="密码"><br>
@@ -107,7 +107,7 @@
                 chatHistory.push({ role: 'assistant', content: all_text });
                 return;
             }
-            aiMessageDiv.innerText += text;
+            aiMessageDiv.innerHTML += text;
             all_text += text;
             document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
         }
@@ -124,7 +124,7 @@
 
             aiMessageDiv = document.createElement('div');
             aiMessageDiv.className = 'message ai';
-            aiMessageDiv.innerText = 'X-Sune: ';
+            aiMessageDiv.innerHTML = "<img src='./favicon.ico' style='width:16px;height:16px;'>: ";
             document.getElementById('chat-box').appendChild(aiMessageDiv);
 
             responsing = true;

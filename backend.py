@@ -57,22 +57,6 @@ class Token(BaseModel):
 def get_db():
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            password TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS chat_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT,
-            role TEXT,
-            content TEXT
-        )
-    """)
-    conn.commit()
     return conn, cursor
 
 @app.post("/register")
@@ -100,6 +84,7 @@ def login(user: User):
     return {"access_token": token}
 
 def save_chat(username, role, content):
+    print(username, role, content)
     conn, cursor = get_db()
     cursor.execute("INSERT INTO chat_history (username, role, content) VALUES (?, ?, ?)", 
                    (username, role, content))
@@ -134,45 +119,47 @@ def check_token(token: Token):
 @app.websocket("/ws/chat")
 async def chat_stream(websocket: WebSocket):
     await websocket.accept()
-    while True:
-        data = await websocket.receive_json()
-        user = data.get("user")
-        token = data.get("token")
-        message = data.get("message")
-        history = data.get("history", [])
+    try:
+        while True:
+            data = await websocket.receive_json()
+            user = data.get("user")
+            token = data.get("token")
+            message = data.get("message")
+            history = data.get("history", [])
 
-        try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-            username = payload["sub"]
-            if username != user:
-                raise jwt.InvalidTokenError
-        except jwt.ExpiredSignatureError:
-            await websocket.send_text("<TOKEN EXPIRED>")
-            continue
-        except jwt.InvalidTokenError:
-            await websocket.send_text("<INVALID TOKEN>")
-            continue
-        
-        response = openai.chat.completions.create(
-            model=MODEL,
-            messages=history + [{"role": "system", "content": SYSTEM_PROMPT}] + history + [{"role": "user", "content": message}],
-            stream=True
-        )
-        
-        ai_response = ""
-        first_token = True
+            try:
+                payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+                username = payload["sub"]
+                if username != user:
+                    raise jwt.InvalidTokenError
+            except jwt.ExpiredSignatureError:
+                await websocket.send_text("<TOKEN EXPIRED>")
+                continue
+            except jwt.InvalidTokenError:
+                await websocket.send_text("<INVALID TOKEN>")
+                continue
+            
+            response = openai.chat.completions.create(
+                model=MODEL,
+                messages=history + [{"role": "system", "content": SYSTEM_PROMPT}] + history + [{"role": "user", "content": message}],
+                stream=True
+            )
+            
+            ai_response = ""
+            first_token = True
 
-        for chunk in response:
-            text = chunk.choices[0].delta.content
-            if text:
-                if first_token and text == "\n\n":
-                    first_token = False
-                    continue
-                ai_response += text
-                await websocket.send_text(text)
-        
-        await websocket.send_text("<RESPONSE ENDED>")
+            for chunk in response:
+                text = chunk.choices[0].delta.content
+                if text:
+                    if first_token and text == "\n\n":
+                        first_token = False
+                        continue
+                    ai_response += text
+                    await websocket.send_text(text)
+            
+            await websocket.send_text("<RESPONSE ENDED>")
 
-        save_chat(user, "user", message)
-        save_chat(user, "assistant", ai_response)
-
+            save_chat(user, "user", message)
+            save_chat(user, "assistant", ai_response)
+    except WebSocketDisconnect:
+        pass
