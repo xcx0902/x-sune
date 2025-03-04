@@ -33,6 +33,11 @@
         <br>
         <input type="text" id="message" placeholder="输入消息...">
         <button onclick="sendMessage()">发送</button>
+        <br>
+        <select id="model">
+            <option value="fast">Fast</option>
+            <option value="accurate">Accurate</option>
+        </select>
     </div>
     <script>
         let token = localStorage.getItem("token");
@@ -119,9 +124,8 @@
             chatHistory.push({ role: 'user', content: message });
             addMessage('user', message);
             document.getElementById('message').value = '';
-            all_text = '';            
-            ws.send(JSON.stringify({ user: username, token: token, message, history: chatHistory }));
-
+            all_text = '';
+            ws.send(JSON.stringify({ user: username, token: token, message, history: chatHistory, model: document.getElementById('model').value}));
             aiMessageDiv = document.createElement('div');
             aiMessageDiv.className = 'message ai';
             aiMessageDiv.innerHTML = "<img src='./favicon.ico' style='width:16px;height:16px;'>: ";
