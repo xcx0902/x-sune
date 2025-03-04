@@ -1,13 +1,11 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, Request
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from pydantic import BaseModel
 from typing import List
+from datetime import datetime, timedelta, timezone
 import sqlite3
 import openai
 import jwt
-import time
 import random
-from hashlib import sha256
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -90,7 +88,10 @@ def login(user: User) -> dict:
     try:
         cursor.execute("SELECT * FROM users WHERE username=? AND password=?", (user.username, user.password))
         if cursor.fetchone():
-            payload = {"sub": user.username}
+            payload = {
+                "sub": user.username,
+                "exp": datetime.now(timezone.utc) + timedelta(days=15)
+            }
             token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
             return {"access_token": token}
         else:
@@ -111,6 +112,8 @@ def decode_token(token: str) -> dict:
     """Decode JWT token and return status"""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        if datetime.now(timezone.utc) > payload["exp"]:
+            return {"status": "expired"}
         return {"status": "ok", "username": payload["sub"]}
     except jwt.ExpiredSignatureError:
         return {"status": "expired"}
@@ -120,15 +123,11 @@ def decode_token(token: str) -> dict:
 @app.post("/check_token")
 def check_token(token: Token) -> str:
     """Check if the token is valid"""
-    try:
-        payload = jwt.decode(token.token, SECRET_KEY, algorithms=["HS256"])
-        username = payload["sub"]
-        if username != token.username:
-            raise jwt.InvalidTokenError
-    except jwt.ExpiredSignatureError as e:
-        raise HTTPException(status_code=401, detail="Token 已过期") from e
-    except jwt.InvalidTokenError as e:
-        raise HTTPException(status_code=401, detail="无效的 Token") from e
+    result = decode_token(token.token)
+    if result["status"] != "ok":
+        raise HTTPException(status_code=401, detail=result["status"])
+    if result["username"] != token.username:
+        raise HTTPException(status_code=401, detail="invalid")
     return "ok"
 
 @app.websocket("/ws/chat")
@@ -138,21 +137,17 @@ async def chat_stream(websocket: WebSocket) -> None:
     try:
         while True:
             data = await websocket.receive_json()
-            user = data.get("user")
+            username = data.get("username")
             token = data.get("token")
             message = data.get("message")
             history = data.get("history", [])
             model = data.get("model", "fast")
-            try:
-                payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-                username = payload["sub"]
-                if username != user:
-                    raise jwt.InvalidTokenError
-            except jwt.ExpiredSignatureError:
-                await websocket.send_text("<TOKEN EXPIRED>")
+            result = decode_token(token)
+            if result["status"] != "ok":
+                await websocket.send_text("<" + result["status"].upper() + ">")
                 continue
-            except jwt.InvalidTokenError:
-                await websocket.send_text("<INVALID TOKEN>")
+            if result["username"] != username:
+                await websocket.send_text("<INVALID>")
                 continue
             model_id = random.choice(CATEGORY[model])
             oai = openai.OpenAI(
@@ -175,7 +170,7 @@ async def chat_stream(websocket: WebSocket) -> None:
                     ai_response += text
                     await websocket.send_text(text)
             await websocket.send_text("<RESPONSE ENDED>")
-            save_chat(user, "user", message)
-            save_chat(user, "assistant", ai_response)
+            save_chat(username, "user", message)
+            save_chat(username, "assistant", ai_response)
     except WebSocketDisconnect:
         pass

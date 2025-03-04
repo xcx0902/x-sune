@@ -43,8 +43,9 @@
         let token = localStorage.getItem("token");
         let username = localStorage.getItem("username");
         let chatHistory = [];
-        let api_host = window.location.host.indexOf("localhost") != -1 ? "http://localhost:8000" : "https://x-sune.xcx0902.us.kg";
-        let api_host_ws = window.location.host.indexOf("localhost") != -1 ? "ws://localhost:8000" : "wss://x-sune.xcx0902.us.kg";
+        const isLocal = window.location.host.includes("localhost");
+        const api_host = isLocal ? "http://localhost:8000" : "https://x-sune.xcx0902.us.kg";
+        const api_host_ws = isLocal ? "ws://localhost:8000" : "wss://x-sune.xcx0902.us.kg";
 
         function check_token() {
             if (username != null && token != null) {
@@ -99,11 +100,11 @@
 
         ws.onmessage = function(event) {
             let text = event.data;
-            if (text == "<TOKEN EXPIRED>") {
+            if (text == "<EXPIRED>") {
                 alert("Token 已过期，请重新登录");
                 location.reload();
             }
-            if (text == "<INVALID TOKEN>") {
+            if (text == "<INVALID>") {
                 alert("无效的 Token，请重新登录");
                 location.reload();
             }
@@ -125,12 +126,11 @@
             addMessage('user', message);
             document.getElementById('message').value = '';
             all_text = '';
-            ws.send(JSON.stringify({ user: username, token: token, message, history: chatHistory, model: document.getElementById('model').value}));
+            ws.send(JSON.stringify({ username: username, token: token, message, history: chatHistory, model: document.getElementById('model').value}));
             aiMessageDiv = document.createElement('div');
             aiMessageDiv.className = 'message ai';
             aiMessageDiv.innerHTML = "<img src='./favicon.ico' style='width:16px;height:16px;'>: ";
             document.getElementById('chat-box').appendChild(aiMessageDiv);
-
             responsing = true;
         }
 
