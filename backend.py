@@ -156,7 +156,7 @@ async def chat_stream(websocket: WebSocket) -> None:
                 base_url=PROVIDERS[model_id][0],
                 default_headers={
                     "User-Agent": "OpenAI-SDK",
-                    "Cookie": SECRETS["qwen_cookie"] # Adapted for Qwen
+                    "Cookie": SECRETS.get("qwen_cookie", None) # Adapted for Qwen
                 }
             )
             try:
