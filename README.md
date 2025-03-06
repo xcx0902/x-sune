@@ -50,3 +50,7 @@ To modify the existing models or add new ones, you need to update the `PROVIDERS
    ```
 
 Ensure that any new models you add are supported by the respective API providers and that you have the necessary API keys configured in the `secret.txt` file.
+
+## System Prompt Configuration
+
+The system prompt is used to set the context and provide instructions to the AI when processing chat messages. To modify the system prompt, update the `SYSTEM_PROMPT` string in the `backend.py` file. For example, you can change the name of the AI or adjust the personality it should emulate.
