@@ -137,7 +137,7 @@ async def chat_stream(websocket: WebSocket) -> None:
     await websocket.accept()
     try:
         while True:
-            data = await websocket.receive_json()
+            data: dict = await websocket.receive_json()
             username = data.get("username")
             token = data.get("token")
             message = data.get("message")
@@ -154,7 +154,10 @@ async def chat_stream(websocket: WebSocket) -> None:
             oai = openai.OpenAI(
                 api_key=SECRETS["apikey_" + str(model_id)],
                 base_url=PROVIDERS[model_id][0],
-                default_headers={"User-Agent": "OpenAI-SDK"}
+                default_headers={
+                    "User-Agent": "OpenAI-SDK",
+                    "Cookie": SECRETS["qwen_cookie"] # Adapted for Qwen
+                }
             )
             try:
                 response = oai.chat.completions.create(
@@ -164,7 +167,7 @@ async def chat_stream(websocket: WebSocket) -> None:
                     extra_body={"incremental_output": True} # Adapted for Qwen
                 )
             except Exception as e:
-                await websocket.send_text(f"Error: {e}")
+                await websocket.send_text(f"{type(e).__name__}: {e}")
                 continue
             assistant_message = ""
             first_token = True
