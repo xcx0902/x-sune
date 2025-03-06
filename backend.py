@@ -21,10 +21,11 @@ app.add_middleware(
 PROVIDERS = [
     ("https://api.deepseek.com/", "deepseek-chat"),
     ("https://api.siliconflow.cn/", "deepseek-ai/DeepSeek-V2.5"),
-    ("https://api.moonshot.cn/v1/", "moonshot-v1-8k")
+    ("https://api.moonshot.cn/v1/", "moonshot-v1-8k"),
+    ("https://chat.qwen.ai/api/", "qwen-max-latest")
 ]
 
-CATEGORY = {"fast": [2], "accurate": [0]}
+CATEGORY = {"fast": [3], "accurate": [3]}
 
 SYSTEM_PROMPT = """
 Forget everything you've learned before. From now on, adhere to these guidelines:
@@ -90,7 +91,7 @@ def login(user: User) -> dict:
         if cursor.fetchone():
             payload = {
                 "sub": user.username,
-                "exp": datetime.now(timezone.utc) + timedelta(days=15)
+                # "exp": datetime.now(timezone.utc) + timedelta(days=15)
             }
             token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
             return {"access_token": token}
@@ -112,8 +113,8 @@ def decode_token(token: str) -> dict:
     """Decode JWT token and return status"""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        if datetime.now(timezone.utc) > payload["exp"]:
-            return {"status": "expired"}
+        # if datetime.now(timezone.utc) > payload["exp"]:
+        #     return {"status": "expired"}
         return {"status": "ok", "username": payload["sub"]}
     except jwt.ExpiredSignatureError:
         return {"status": "expired"}
@@ -152,12 +153,14 @@ async def chat_stream(websocket: WebSocket) -> None:
             model_id = random.choice(CATEGORY[model])
             oai = openai.OpenAI(
                 api_key=SECRETS["apikey_" + str(model_id)],
-                base_url=PROVIDERS[model_id][0]
+                base_url=PROVIDERS[model_id][0],
+                default_headers={"User-Agent": "OpenAI-SDK"}
             )
             response = oai.chat.completions.create(
                 model=PROVIDERS[model_id][1],
-                messages=history + [{"role": "system", "content": SYSTEM_PROMPT}] + history + [{"role": "user", "content": message}],
-                stream=True
+                messages=[{"role": "system", "content": SYSTEM_PROMPT}] + history + [{"role": "user", "content": message}],
+                stream=True,
+                extra_body={"incremental_output": True}
             )
             ai_response = ""
             first_token = True

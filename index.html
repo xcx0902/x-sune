@@ -31,13 +31,15 @@
         <br><br>
         <div class="chat-box" id="chat-box"></div>
         <br>
-        <input type="text" id="message" placeholder="输入消息...">
+        <input type="text" id="message" placeholder="输入消息..." onkeydown="if (event.keyCode == 13) { sendMessage(); }">
         <button onclick="sendMessage()">发送</button>
         <br>
         <select id="model">
             <option value="fast">Fast</option>
             <option value="accurate">Accurate</option>
         </select>
+        <br>
+        <button onclick="clearChatHistory()">清除历史对话</button>
     </div>
     <script>
         let token = localStorage.getItem("token");
@@ -144,7 +146,7 @@
         }
 
         function clearChatHistory() {
-            chatHistory = []
+            chatHistory = [];
             const chatBox = document.getElementById('chat-box');
             chatBox.innerHTML = "";
         }
