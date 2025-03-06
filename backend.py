@@ -161,23 +161,23 @@ async def chat_stream(websocket: WebSocket) -> None:
                     model=PROVIDERS[model_id][1],
                     messages=[{"role": "system", "content": SYSTEM_PROMPT}] + history + [{"role": "user", "content": message}],
                     stream=True,
-                    extra_body={"incremental_output": True}
+                    extra_body={"incremental_output": True} # Adapted for Qwen
                 )
             except Exception as e:
                 await websocket.send_text(f"Error: {e}")
                 continue
-            ai_response = ""
+            assistant_message = ""
             first_token = True
             for chunk in response:
                 text = chunk.choices[0].delta.content
                 if text:
                     if first_token and text == "\n\n":
-                        first_token = False
                         continue
-                    ai_response += text
+                    first_token = False
+                    assistant_message += text
                     await websocket.send_text(text)
             await websocket.send_text("<RESPONSE ENDED>")
             save_chat(username, "user", message)
-            save_chat(username, "assistant", ai_response)
+            save_chat(username, "assistant", assistant_message)
     except WebSocketDisconnect:
         pass
