@@ -119,15 +119,15 @@ async def chat_stream(websocket: WebSocket) -> None:
             message = data.get("message")
             history = data.get("history", [])
             model = data.get("model", "fast")
-            result = decode_token(token)
-            if result["status"] != "ok":
-                await websocket.send_text("<" + result["status"].upper() + ">")
+            auth = decode_token(token)
+            if auth["status"] != "ok":
+                await websocket.send_text("<" + auth["status"].upper() + ">")
                 continue
-            if result["username"] != username:
+            if auth["username"] != username:
                 await websocket.send_text("<INVALID>")
                 continue
             model_id = random.choice(CATEGORY[model])
-            model_info = MODELS[model_id]
+            model_info:dict = MODELS[model_id]
             oai = openai.OpenAI(
                 api_key=model_info["api_key"],
                 base_url=model_info["url"],
@@ -151,7 +151,7 @@ async def chat_stream(websocket: WebSocket) -> None:
             for chunk in response:
                 text = chunk.choices[0].delta.content
                 if text:
-                    if first_token and text == "\n\n":
+                    if first_token and text == "\n\n": # Adapted for SiliconFlow
                         continue
                     first_token = False
                     assistant_message += text
