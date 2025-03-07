@@ -1,6 +1,5 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from pydantic import BaseModel
-from typing import List
 from datetime import datetime, timedelta, timezone
 import sqlite3
 import openai
@@ -21,7 +20,7 @@ app.add_middleware(
 
 config = json.loads(open("config.json", "r").read())
 
-PROVIDERS = config["models"]
+MODELS = config["models"]
 CATEGORY = config["category"]
 SYSTEM_PROMPT = config["system_prompt"]
 SECRET_KEY = config["secret_key"]
@@ -34,7 +33,7 @@ class ChatRequest(BaseModel):
     user: str
     token: str
     message: str
-    history: List[dict]
+    history: list[dict]
 
 class Token(BaseModel):
     username: str
@@ -128,7 +127,7 @@ async def chat_stream(websocket: WebSocket) -> None:
                 await websocket.send_text("<INVALID>")
                 continue
             model_id = random.choice(CATEGORY[model])
-            model_info = PROVIDERS[model_id]
+            model_info = MODELS[model_id]
             oai = openai.OpenAI(
                 api_key=model_info["api_key"],
                 base_url=model_info["url"],
