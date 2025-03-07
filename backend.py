@@ -134,8 +134,8 @@ async def chat_stream(websocket: WebSocket) -> None:
                     api_key=model_info["api_key"],
                     base_url=model_info["url"],
                     default_headers={
-                        "User-Agent": model_info.get("user_agent", None),
-                        "Cookie": model_info.get("cookie", None)
+                        "User-Agent": model_info.get("user_agent", ""),
+                        "Cookie": model_info.get("cookie", "")
                     }
                 ).chat.completions.create(
                     model=model_info["name"],
