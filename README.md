@@ -9,8 +9,6 @@ A chatbot built with FastAPI, OpenAI-SDK and SQLite.
 
 ## Configuration
 
-### Configuration Details
-
 To configure the application, update the `config.json` file with the following details:
 
 - `secret_key`: A secret key for encoding and decoding JWT tokens.
