@@ -67,7 +67,7 @@ def login(user: User) -> dict:
         if cursor.fetchone():
             payload = {
                 "sub": user.username,
-                # "exp": datetime.now(timezone.utc) + timedelta(days=15)
+                "exp": (datetime.now(timezone.utc) + timedelta(days=15)).timestamp()
             }
             token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
             return {"access_token": token}
@@ -89,8 +89,8 @@ def decode_token(token: str) -> dict:
     """Decode JWT token and return status"""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        # if datetime.now(timezone.utc) > payload["exp"]:
-        #     return {"status": "expired"}
+        if datetime.now(timezone.utc).timestamp() > payload["exp"]:
+            return {"status": "expired"}
         return {"status": "ok", "username": payload["sub"]}
     except jwt.ExpiredSignatureError:
         return {"status": "expired"}
