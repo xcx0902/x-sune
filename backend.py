@@ -1,12 +1,13 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
-from pydantic import BaseModel
+import random
+import json
 from datetime import datetime, timedelta, timezone
+
 import sqlite3
 import openai
 import jwt
-import random
-import json
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -18,7 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-config = json.loads(open("config.json", "r").read())
+config = json.loads(open("config.json", "r", encoding="utf-8").read())
 
 MODELS = config["models"]
 CATEGORY = config["category"]
