@@ -1,6 +1,10 @@
 # X-Sune
 A chatbot built with FastAPI, OpenAI-SDK and SQLite.
 
+## Demo
+
+<https://xcx0902.github.io/x-sune/>
+
 ## Features
 - User registration and login
 - Chat with the AI
