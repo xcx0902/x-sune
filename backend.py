@@ -159,4 +159,4 @@ async def chat_stream(websocket: WebSocket) -> None:
             save_chat(username, "user", message)
             save_chat(username, "assistant", assistant_message)
     except WebSocketDisconnect:
-        pass
+        return
