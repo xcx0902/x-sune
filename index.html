@@ -40,6 +40,7 @@
             <option value="unstable">Unstable</option>
         </select>
         <br>
+        <div id="model-tip"></div>
         <button onclick="clearChatHistory()">清除历史对话</button>
     </div>
     <script>
@@ -103,6 +104,10 @@
 
         ws.onmessage = function(event) {
             let text = event.data;
+            if (text.substring(0, 7) == "MODEL: ") {
+                document.getElementById('model-tip').innerText = "Current response model: " + text.substring(7);
+                return;
+            }
             if (text == "<EXPIRED>") {
                 alert("Token 已过期，请重新登录");
                 location.reload();
@@ -113,6 +118,8 @@
             }
             if (text == "<RESPONSE ENDED>") {
                 responsing = false;
+                t = document.getElementById('model-tip').innerText;
+                document.getElementById('model-tip').innerText = t.replace("Current", "Last");
                 chatHistory.push({ role: 'assistant', content: all_text });
                 return;
             }

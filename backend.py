@@ -146,6 +146,7 @@ async def chat_stream(websocket: WebSocket) -> None:
             except Exception as e:
                 await websocket.send_text(f"{type(e).__name__}: {e}")
                 continue
+            await websocket.send_text("MODEL: " + model_info["name"])
             assistant_message = ""
             first_token = True
             for chunk in response:
