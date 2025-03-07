@@ -128,16 +128,15 @@ async def chat_stream(websocket: WebSocket) -> None:
                 continue
             model_id = random.choice(CATEGORY[model])
             model_info: dict = MODELS[model_id]
-            oai = openai.OpenAI(
-                api_key=model_info["api_key"],
-                base_url=model_info["url"],
-                default_headers={
-                    "User-Agent": model_info.get("user_agent", None),
-                    "Cookie": model_info.get("cookie", None)
-                }
-            )
             try:
-                response = oai.chat.completions.create(
+                response = openai.OpenAI(
+                    api_key=model_info["api_key"],
+                    base_url=model_info["url"],
+                    default_headers={
+                        "User-Agent": model_info.get("user_agent", None),
+                        "Cookie": model_info.get("cookie", None)
+                    }
+                ).chat.completions.create(
                     model=model_info["name"],
                     messages=[{"role": "system", "content": SYSTEM_PROMPT}] + history + [{"role": "user", "content": message}],
                     stream=True,
