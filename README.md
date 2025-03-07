@@ -42,4 +42,4 @@ The application uses SQLite to manage user data and chat history. The database i
   - `role`: A text field indicating the role of the message sender (user or assistant).
   - `content`: A text field containing the actual message content.
 
-After creating the `config.json` file, you can run `init.sql` to initialize the database and create the required tables.
+After creating the `config.json` file, you can create the `users.db` file and then run `init.sql` to initialize the database and create the required tables.
