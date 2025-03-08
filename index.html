@@ -99,13 +99,16 @@
         const ws = new ReconnectingWebSocket(api_host_ws + "/ws/chat");
 
         let responsing = false;
+        let first_message = false;
         let aiMessageDiv;
         let all_text = '';
 
         ws.onmessage = function(event) {
             let text = event.data;
-            if (text.substring(0, 7) == "MODEL: ") {
-                document.getElementById('model-tip').innerText = "Current response model: " + text.substring(7);
+            const modelTip = document.getElementById('model-tip');
+            if (first_message) {
+                modelTip.innerText = "Current response model: " + text;
+                first_message = false;
                 return;
             }
             if (text == "<EXPIRED>") {
@@ -118,12 +121,16 @@
             }
             if (text == "<RESPONSE ENDED>") {
                 responsing = false;
-                t = document.getElementById('model-tip').innerText;
-                document.getElementById('model-tip').innerText = t.replace("Current", "Last");
+                modelTip.innerText = modelTip.innerText.replace("Current", "Last");
                 chatHistory.push({ role: 'assistant', content: all_text });
                 return;
             }
-            aiMessageDiv.innerHTML += text;
+            function toHTML(str) {
+                const div = document.createElement("div");
+                div.textContent = str;
+                return div.innerHTML;
+            }
+            aiMessageDiv.innerHTML += toHTML(text);
             all_text += text;
             document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
         }
@@ -142,6 +149,7 @@
             aiMessageDiv.innerHTML = "<img src='./favicon.ico' style='width:16px;height:16px;'>: ";
             document.getElementById('chat-box').appendChild(aiMessageDiv);
             responsing = true;
+            first_message = true;
         }
 
         function addMessage(role, content) {
