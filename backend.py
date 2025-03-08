@@ -129,6 +129,7 @@ async def chat_stream(websocket: WebSocket) -> None:
                 continue
             model_id = random.choice(CATEGORY[model])
             model_info: dict = MODELS[model_id]
+            await websocket.send_text(model_info["name"])
             try:
                 response = openai.OpenAI(
                     api_key=model_info["api_key"],
@@ -145,8 +146,8 @@ async def chat_stream(websocket: WebSocket) -> None:
                 )
             except Exception as e:
                 await websocket.send_text(f"{type(e).__name__}: {e}")
+                await websocket.send_text("<RESPONSE ENDED>")
                 continue
-            await websocket.send_text(model_info["name"])
             assistant_message = ""
             first_token = True
             for chunk in response:
