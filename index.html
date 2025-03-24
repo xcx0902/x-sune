@@ -41,17 +41,46 @@
         </select>
         <br>
         <div id="model-tip"></div>
+        <div id="domain">Disconnected</div>
         <button onclick="clearChatHistory()">清除历史对话</button>
     </div>
     <script>
         let token = localStorage.getItem("token");
         let username = localStorage.getItem("username");
         let chatHistory = [];
-        const isLocal = window.location.host.includes("localhost");
+
+        let domain = ["://localhost:8000", "://xcx0902.v6.army:8000", "s://x-sune.xcx0902.us.kg"];
+        let api_host = "";
+        let api_host_ws = "";
+
+        function checkConnection() {
+            let requests = domain.map(d => 
+                axios.get(`http${d}/ping`)
+                    .then(() => d)
+                    .catch(() => null)
+            );
+
+            Promise.all(requests).then(results => {
+                let availableDomain = results.find(d => d !== null);
+                if (availableDomain) {
+                    api_host = `http${availableDomain}`;
+                    api_host_ws = `ws${availableDomain}`;
+                    document.getElementById("domain").innerText = `Connected to ${api_host}`;
+                } else {
+                    document.getElementById("domain").innerText = `Disconnected`;
+                }
+                
+                check_token();
+                connect_ws();
+            });
+        }
+        checkConnection();
+
+        // const isLocal = window.location.host.includes("localhost");
         // const api_host = isLocal ? "http://localhost:8000" : "https://x-sune.xcx0902.us.kg";
         // const api_host_ws = isLocal ? "ws://localhost:8000" : "wss://x-sune.xcx0902.us.kg";
-        const api_host = "http://xcx0902.v6.army:8000";
-        const api_host_ws = "ws://xcx0902.v6.army:8000";
+        // const api_host = "http://xcx0902.v6.army:8000";
+        // const api_host_ws = "ws://xcx0902.v6.army:8000";
 
         function check_token() {
             if (username != null && token != null) {
@@ -67,8 +96,6 @@
                     });
             }
         }
-
-        check_token()
 
         function register() {
             const username = document.getElementById('username').value;
@@ -98,43 +125,45 @@
             location.reload();
         }
 
-        const ws = new ReconnectingWebSocket(api_host_ws + "/ws/chat");
-
         let responsing = false;
         let first_message = false;
         let aiMessageDiv;
         let all_text = '';
+        let ws = null;
 
-        ws.onmessage = function(event) {
-            let text = event.data;
-            const modelTip = document.getElementById('model-tip');
-            if (first_message) {
-                modelTip.innerText = "Current response model: " + text;
-                first_message = false;
-                return;
+        function connect_ws() {
+            ws = new ReconnectingWebSocket(api_host_ws + "/ws/chat");
+            ws.onmessage = function(event) {
+                let text = event.data;
+                const modelTip = document.getElementById('model-tip');
+                if (first_message) {
+                    modelTip.innerText = "Current response model: " + text;
+                    first_message = false;
+                    return;
+                }
+                if (text == "<EXPIRED>") {
+                    alert("Token 已过期，请重新登录");
+                    location.reload();
+                }
+                if (text == "<INVALID>") {
+                    alert("无效的 Token，请重新登录");
+                    location.reload();
+                }
+                if (text == "<RESPONSE ENDED>") {
+                    responsing = false;
+                    modelTip.innerText = modelTip.innerText.replace("Current", "Last");
+                    chatHistory.push({ role: 'assistant', content: all_text });
+                    return;
+                }
+                function toHTML(str) {
+                    const div = document.createElement("div");
+                    div.textContent = str;
+                    return div.innerHTML;
+                }
+                aiMessageDiv.innerHTML += toHTML(text);
+                all_text += text;
+                document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
             }
-            if (text == "<EXPIRED>") {
-                alert("Token 已过期，请重新登录");
-                location.reload();
-            }
-            if (text == "<INVALID>") {
-                alert("无效的 Token，请重新登录");
-                location.reload();
-            }
-            if (text == "<RESPONSE ENDED>") {
-                responsing = false;
-                modelTip.innerText = modelTip.innerText.replace("Current", "Last");
-                chatHistory.push({ role: 'assistant', content: all_text });
-                return;
-            }
-            function toHTML(str) {
-                const div = document.createElement("div");
-                div.textContent = str;
-                return div.innerHTML;
-            }
-            aiMessageDiv.innerHTML += toHTML(text);
-            all_text += text;
-            document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
         }
 
         async function sendMessage() {
