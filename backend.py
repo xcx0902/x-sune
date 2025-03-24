@@ -46,6 +46,11 @@ def get_db():
     cursor = conn.cursor()
     return conn, cursor
 
+@app.get("/ping")
+def ping():
+    """Ping the server"""
+    return {"message": "pong"}
+
 @app.post("/register")
 def register(user: User) -> dict:
     """Register a new user"""

@@ -48,8 +48,10 @@
         let username = localStorage.getItem("username");
         let chatHistory = [];
         const isLocal = window.location.host.includes("localhost");
-        const api_host = isLocal ? "http://localhost:8000" : "https://x-sune.xcx0902.us.kg";
-        const api_host_ws = isLocal ? "ws://localhost:8000" : "wss://x-sune.xcx0902.us.kg";
+        // const api_host = isLocal ? "http://localhost:8000" : "https://x-sune.xcx0902.us.kg";
+        // const api_host_ws = isLocal ? "ws://localhost:8000" : "wss://x-sune.xcx0902.us.kg";
+        const api_host = "http://xcx0902.v6.army:8000";
+        const api_host_ws = "ws://xcx0902.v6.army:8000";
 
         function check_token() {
             if (username != null && token != null) {
