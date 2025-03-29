@@ -7,51 +7,373 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="./reconnecting-websocket.min.js"></script>
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; background-color: white; color: #1a1a1a; text-align: center; }
-        .container { max-width: 600px; margin: auto; padding: 20px; }
-        input, button { margin: 5px; padding: 10px; border-radius: 5px; border: 1px solid black}
-        input { width: 80%; background-color: white; color: #1a1a1a; }
-        button { background-color: #6200ea; color: white; border: none; cursor: pointer; }
-        .chat-box { max-height: 300px; overflow-y: auto; color: white; text-align: left; padding: 10px; border: 1px solid #555; border-radius: 5px; }
-        .message { padding: 5px; border-radius: 5px; margin: 5px 0; }
-        .user { background-color: #0057d8; }
-        .ai { background-color: #ff36b9; }
+        :root {
+            --primary: #6200ea;
+            --primary-light: #9e47ff;
+            --primary-dark: #0400b6;
+            --user-bubble: #0057d8;
+            --ai-bubble: #ff36b9;
+            --text-light: #f5f5f5;
+            --text-dark: #333333;
+            --bg-light: #ffffff;
+            --bg-dark: #121212;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            --border-radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            animation: fadeIn 0.5s ease-out;
+            overflow: hidden;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        h1 img {
+            transition: transform 0.3s ease;
+        }
+
+        h1:hover img {
+            transform: rotate(15deg);
+        }
+
+        #register-login {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        input, button, select {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            background: white;
+            margin-bottom: 10px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(98, 0, 234, 0.2);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            margin: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .chat-box {
+            height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            scroll-behavior: smooth;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .message {
+            padding: 12px 15px;
+            border-radius: 18px;
+            margin: 10px 0;
+            max-width: 80%;
+            position: relative;
+            animation: messageIn 0.3s ease-out;
+            word-wrap: break-word;
+            line-height: 1.4;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes messageIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user {
+            background: var(--user-bubble);
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+
+        .ai {
+            background: var(--ai-bubble);
+            color: white;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message-input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .message-input-area input {
+            flex: 1;
+            margin: 0;
+        }
+
+        .message-input-area button {
+            min-width: 80px;
+        }
+
+        #model {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            background: white;
+            margin-bottom: 15px;
+            outline: none;
+        }
+
+        #model:focus {
+            border-color: var(--primary-light);
+        }
+
+        #model-tip {
+            font-size: 13px;
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+            text-align: center;
+            font-style: italic;
+        }
+
+        #domain {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: var(--border-radius);
+        }
+
+        .typing-indicator {
+            display: inline-block;
+            padding-left: 5px;
+        }
+
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 3px;
+            animation: typing 1s infinite ease-in-out;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* Scrollbar styling */
+        .chat-box::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-box::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+        }
+
+        .chat-box::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .chat-box::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .chat-box {
+                height: 300px;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .button-group button {
+                width: 100%;
+            }
+        }
+
+        /* Pulse animation for connection status */
+        .connected {
+            color: #4CAF50 !important;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Chat with <img src="./favicon.ico" width="56" height="48"></h1>
         <div id="register-login">
-            <input type="text" id="username" placeholder="用户名"><br>
-            <input type="password" id="password" placeholder="密码"><br>
-            <button onclick="register()">注册</button>
-            <button onclick="login()">登录</button>
+            <input type="text" id="username" placeholder="用户名" autocomplete="username">
+            <input type="password" id="password" placeholder="密码" autocomplete="current-password">
+            <div class="button-group">
+                <button onclick="register()">注册</button>
+                <button onclick="login()">登录</button>
+            </div>
         </div>
-        <br><br>
+        
         <div class="chat-box" id="chat-box"></div>
-        <br>
-        <input type="text" id="message" placeholder="输入消息..." onkeydown="if (event.keyCode == 13) { sendMessage(); }">
-        <button onclick="sendMessage()">发送</button>
-        <br>
+        
+        <div class="message-input-area">
+            <input type="text" id="message" placeholder="输入消息..." 
+                   onkeydown="if (event.keyCode == 13) { sendMessage(); }">
+            <button onclick="sendMessage()">发送</button>
+        </div>
+        
         <select id="model">
             <option value="fast">Fast</option>
             <option value="accurate">Accurate</option>
             <option value="unstable">Unstable</option>
         </select>
-        <br>
+        
         <div id="model-tip"></div>
         <div id="domain">Disconnected</div>
-        <button onclick="clearChatHistory()">清除历史对话</button>
+        <div class="button-group">
+            <button onclick="clearChatHistory()">清除历史对话</button>
+        </div>
     </div>
     <script>
         let token = localStorage.getItem("token");
         let username = localStorage.getItem("username");
         let chatHistory = [];
 
-        let domain = ["://localhost:8000", "://xcx0902.v6.army:8000", "s://x-sune.xcx0902.us.kg"];
+        let domain = ["://localhost:11451", "://xcx0902.v6.army:11451", "s://x-sune.xcx0902.us.kg"];
         let api_host = "";
         let api_host_ws = "";
+        let ws = null;
+        let responsing = false;
+        let first_message = false;
+        let aiMessageDiv;
+        let all_text = '';
 
         function checkConnection() {
             let requests = domain.map(d => 
@@ -66,8 +388,10 @@
                     api_host = `http${availableDomain}`;
                     api_host_ws = `ws${availableDomain}`;
                     document.getElementById("domain").innerText = `Connected to ${api_host}`;
+                    document.getElementById("domain").classList.add("connected");
                 } else {
                     document.getElementById("domain").innerText = `Disconnected`;
+                    document.getElementById("domain").classList.remove("connected");
                 }
                 
                 check_token();
@@ -76,22 +400,21 @@
         }
         checkConnection();
 
-        // const isLocal = window.location.host.includes("localhost");
-        // const api_host = isLocal ? "http://localhost:8000" : "https://x-sune.xcx0902.us.kg";
-        // const api_host_ws = isLocal ? "ws://localhost:8000" : "wss://x-sune.xcx0902.us.kg";
-        // const api_host = "http://xcx0902.v6.army:8000";
-        // const api_host_ws = "ws://xcx0902.v6.army:8000";
-
         function check_token() {
             if (username != null && token != null) {
                 axios.post(api_host + '/check_token', { username, token })
                     .then(() => {
                         const register_region = document.getElementById('register-login');
-                        register_region.innerHTML = "<h2>You are logged in as " + username + "</h2>"
-                        register_region.innerHTML += "<button onclick='logout()'>登出</button>"
+                        register_region.innerHTML = `
+                            <center>
+                            <h2 style="margin-bottom: 15px;">Welcome back, ${username}!</h2>
+                            <button onclick='logout()'>登出</button>
+                            </center>
+                        `;
+                        register_region.style.animation = "fadeIn 0.5s ease-out";
                     })
                     .catch(err => {
-                        token = username = ""
+                        token = username = "";
                         alert(err.response.data.detail);
                     });
             }
@@ -100,23 +423,57 @@
         function register() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            if (!username || !password) {
+                alert('用户名和密码不能为空！');
+                return;
+            }
+            
+            const button = event.target;
+            const originalText = button.innerText;
+            button.innerHTML = `<span class="spinner"></span> 注册中...`;
+            button.disabled = true;
+            
             axios.post(api_host + '/register', { username, password })
-                .then(() => alert('注册成功！'))
-                .catch(err => alert('注册失败: ' + err.response.data.detail));
+                .then(() => {
+                    button.innerText = "注册成功！";
+                    setTimeout(() => {
+                        button.innerText = originalText;
+                        button.disabled = false;
+                    }, 2000);
+                })
+                .catch(err => {
+                    alert('注册失败: ' + err.response.data.detail);
+                    button.innerText = originalText;
+                    button.disabled = false;
+                });
         }
 
         function login() {
             username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            if (!username || !password) {
+                alert('用户名和密码不能为空！');
+                return;
+            }
+            
+            const button = event.target;
+            const originalText = button.innerText;
+            button.innerHTML = `<span class="spinner"></span> 登录中...`;
+            button.disabled = true;
+            
             axios.post(api_host + '/token', { username, password })
                 .then(res => {
                     token = res.data.access_token;
                     localStorage.setItem("token", token);
                     localStorage.setItem("username", username);
-                    alert('登录成功！');
-                    location.reload();
+                    button.innerText = "登录成功！";
+                    setTimeout(() => location.reload(), 300);
                 })
-                .catch(err => alert('登录失败: ' + err.response.data.detail));
+                .catch(err => {
+                    alert('登录失败: ' + err.response.data.detail);
+                    button.innerText = originalText;
+                    button.disabled = false;
+                });
         }
 
         function logout() {
@@ -125,14 +482,16 @@
             location.reload();
         }
 
-        let responsing = false;
-        let first_message = false;
-        let aiMessageDiv;
-        let all_text = '';
-        let ws = null;
-
         function connect_ws() {
+            if (ws) {
+                ws.close();
+            }
+            
             ws = new ReconnectingWebSocket(api_host_ws + "/ws/chat");
+            ws.onopen = function() {
+                console.log("WebSocket connection established");
+            };
+            
             ws.onmessage = function(event) {
                 let text = event.data;
                 const modelTip = document.getElementById('model-tip');
@@ -155,39 +514,85 @@
                     chatHistory.push({ role: 'assistant', content: all_text });
                     return;
                 }
+                
+                // Remove typing indicator if it exists
+                const typingIndicator = aiMessageDiv.querySelector('.typing-indicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+                
                 function toHTML(str) {
                     const div = document.createElement("div");
                     div.textContent = str;
                     return div.innerHTML;
                 }
+                
                 aiMessageDiv.innerHTML += toHTML(text);
                 all_text += text;
                 document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
             }
+            
+            ws.onclose = function() {
+                console.log("WebSocket connection closed");
+            };
         }
 
         async function sendMessage() {
             if (!token) { alert('请先登录！'); return; }
             if (responsing) { alert('请等待本轮对话结束！'); return; }
-            const message = document.getElementById('message').value;
+            
+            const message = document.getElementById('message').value.trim();
+            if (!message) return;
+            
             chatHistory.push({ role: 'user', content: message });
             addMessage('user', message);
             document.getElementById('message').value = '';
             all_text = '';
-            ws.send(JSON.stringify({ username: username, token: token, message, history: chatHistory, model: document.getElementById('model').value}));
+            
+            // Add typing indicator
             aiMessageDiv = document.createElement('div');
             aiMessageDiv.className = 'message ai';
-            aiMessageDiv.innerHTML = "<img src='./favicon.ico' style='width:16px;height:16px;'>: ";
+            aiMessageDiv.innerHTML = `
+                <img src='./favicon.ico' style='width:16px;height:16px;'>
+                <strong>X-Sune:</strong>
+                <span class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            `;
             document.getElementById('chat-box').appendChild(aiMessageDiv);
+            document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
+            
             responsing = true;
             first_message = true;
+            
+            try {
+                ws.send(JSON.stringify({ 
+                    username: username, 
+                    token: token, 
+                    message, 
+                    history: chatHistory, 
+                    model: document.getElementById('model').value
+                }));
+            } catch (err) {
+                console.error("WebSocket error:", err);
+                alert("发送消息失败，请检查连接");
+                responsing = false;
+            }
         }
 
         function addMessage(role, content) {
             const chatBox = document.getElementById('chat-box');
             const msgDiv = document.createElement('div');
             msgDiv.className = 'message ' + role;
-            msgDiv.innerText = (role === 'user' ? username + ': ' : 'X-Sune: ') + content;
+            
+            if (role === 'user') {
+                msgDiv.innerHTML = `<strong>${username}:</strong> ${content}`;
+            } else {
+                msgDiv.innerHTML = `<img src='./favicon.ico' style='width:16px;height:16px;'> <strong>X-Sune:</strong> ${content}`;
+            }
+            
             chatBox.appendChild(msgDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
@@ -196,6 +601,12 @@
             chatHistory = [];
             const chatBox = document.getElementById('chat-box');
             chatBox.innerHTML = "";
+            
+            // Add animation effect
+            chatBox.style.animation = "fadeOut 0.3s ease-out";
+            setTimeout(() => {
+                chatBox.style.animation = "fadeIn 0.3s ease-out";
+            }, 300);
         }
     </script>
 </body>
