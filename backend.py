@@ -147,6 +147,7 @@ async def chat_stream(websocket: WebSocket) -> None:
                     model=model_info["name"],
                     messages=[{"role": "system", "content": SYSTEM_PROMPT}] + history + [{"role": "user", "content": message}],
                     stream=True,
+                    max_tokens=1024,
                     extra_body={"incremental_output": True} # Adapted for Qwen
                 )
             except Exception as e:
