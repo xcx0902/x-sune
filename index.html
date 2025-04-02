@@ -371,11 +371,8 @@
         let username = localStorage.getItem("username");
         let chatHistory = [];
 
-        let domain = ["s://x-sune.xcx0902.dpdns.org"];
-        if (window.location.hostname == 'localhost') {
-            domain.push("://localhost:8000");
-        }
-        
+        let domain = ["s://x-sune.xcx0902.dpdns.org", "://localhost:8000"];
+
         let api_host = "";
         let api_host_ws = "";
         let ws = null;
