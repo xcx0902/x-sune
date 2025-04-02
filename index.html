@@ -54,6 +54,11 @@
             overflow: hidden;
         }
 
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(20px); }
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -366,7 +371,7 @@
         let username = localStorage.getItem("username");
         let chatHistory = [];
 
-        let domain = ["://localhost:11451", "://xcx0902.v6.army:11451", "s://x-sune.xcx0902.us.kg"];
+        let domain = ["://localhost:8000", "s://x-sune.xcx0902.dpdns.org"];
         let api_host = "";
         let api_host_ws = "";
         let ws = null;
